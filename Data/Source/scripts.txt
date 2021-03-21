@@ -1,0 +1,12 @@
+Source: https://www.mssqltips.com/sqlservertip/5242/adding-users-to-azure-sql-databases/
+Create new login under Databases/Security/Logins:
+
+CREATE LOGIN codelogin WITH PASSWORD = 'MyVeryOwn$721' 
+GO
+
+CREATE USER codelogin 
+FOR LOGIN codelogin 
+WITH DEFAULT_SCHEMA = dbo; 
+  
+-- add user to role(s) in db 
+ALTER ROLE db_owner ADD MEMBER codelogin;
