@@ -68,17 +68,28 @@ namespace WorldCities.Data
         /// Sorting Column name (or null if none set)
         /// </summary>
         public string SortColumn { get; set; }
+
         /// <summary>
         /// Sorting Order ("ASC", "DESC" or null if none set)
         /// </summary>
         public string SortOrder { get; set; }
+
+        /// <summary>
+        /// Filter Column name
+        /// </summary>
+        public string FilterColumn { get; set; }
+
+        /// <summary>
+        /// Filtering value to lookup
+        /// </summary>
+        public string FilterQuery { get; set; }
 
         #endregion
 
         /// <summary>
         /// Private constructor called by the CreateAsync method.
         /// </summary>
-        private ApiResult(List<T> data, int count, int pageIndex, int pageSize, string sortColumn, string sortOrder)
+        private ApiResult(List<T> data, int count, int pageIndex, int pageSize, string sortColumn, string sortOrder, string filterColumn, string filterQuery)
         {
             Data = data;
             PageIndex = pageIndex;
@@ -87,6 +98,8 @@ namespace WorldCities.Data
             TotalPages = (int)Math.Ceiling(count / (double)pageSize);
             SortColumn = sortColumn;
             SortOrder = sortOrder;
+            FilterColumn = filterColumn;
+            FilterQuery = filterQuery;
         }
 
         #region Methods
@@ -102,8 +115,15 @@ namespace WorldCities.Data
         /// <returns>
         /// A object containing the paged result and all the relevant paging navigation info.
         /// </returns>
-        public static async Task<ApiResult<T>> CreateAsync(IQueryable<T> source, int pageIndex, int pageSize, string sortColumn = null, string sortOrder = null)
+        public static async Task<ApiResult<T>> CreateAsync(IQueryable<T> source, int pageIndex, int pageSize, string sortColumn = null, string sortOrder = null, string filterColumn = null, string filterQuery = null)
         {
+            if (!String.IsNullOrEmpty(filterColumn)
+                && !String.IsNullOrEmpty(filterQuery)
+                && IsValidProperty(filterColumn))
+            {
+                source = source.Where($"{filterColumn}.Contains(@0)", filterQuery);
+            }
+
             var count = await source.CountAsync();
             if (!String.IsNullOrEmpty(sortColumn) && IsValidProperty(sortColumn))
             {
@@ -115,8 +135,8 @@ namespace WorldCities.Data
             source = source.Skip(pageIndex * pageSize).Take(pageSize);
 
             var data = await source.ToListAsync();
-            
-            return new ApiResult<T>(data, count, pageIndex, pageSize, sortColumn, sortOrder);
+
+            return new ApiResult<T>(data, count, pageIndex, pageSize, sortColumn, sortOrder, filterColumn, filterQuery);
         }
 
         /// <summary>
